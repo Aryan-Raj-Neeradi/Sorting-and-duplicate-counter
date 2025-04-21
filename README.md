@@ -17,8 +17,8 @@ HTML5
 
 1. Clone the Repository
 ```
-git clone https://github.com/your-username/certification-tracker-html.git
-cd certification-tracker-html
+https://github.com/Aryan-Raj-Neeradi/Sorting-and-duplicate-counter.git
+cd Sorting-and-duplicate-counter
 ```
 2. Open the Tool
 
