@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Certification Tracker</title>
+  <style>
+    body { font-family: Arial; background: #f4f4f4; padding: 40px; }
+    input, button { padding: 10px; font-size: 16px; margin: 5px; }
+    input { width: 300px; }
+    .section { background: white; padding: 20px; margin-top: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; }
+    .highlight { font-weight: bold; color: green; }
+    .delete-btn { background: red; color: white; border: none; padding: 4px 8px; cursor: pointer; margin-left: 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <h2>🔐 Name sorting Input</h2>
+  <input type="text" id="providerInput" placeholder="Enter provider name" list="providerSuggestions" />
+  <datalist id="providerSuggestions"></datalist>
+  <button onclick="addProvider()">Add</button>
+  <button onclick="exportCSV()">Export as CSV</button>
+  <button onclick="clearAll()">Clear All</button>
+
+  <div class="section">
+    <h3>🔠 Sorted by Name</h3>
+    <ul id="sortedByNameList"></ul>
+  </div>
+
+  <div class="section">
+    <h3>🔢 Sorted by Frequency</h3>
+    <ul id="sortedByCountList"></ul>
+  </div>
+
+  <div class="section">
+    <h3>🏆 Top Provider</h3>
+    <p id="topProvider" class="highlight"></p>
+  </div>
+
+  <script>
+    function getProviders() {
+      return JSON.parse(localStorage.getItem('providers') || '[]');
+    }
+
+    function saveProviders(providers) {
+      localStorage.setItem('providers', JSON.stringify(providers));
+    }
+
+    function countProviders(providers) {
+      const count = {};
+      providers.forEach(name => {
+        count[name] = (count[name] || 0) + 1;
+      });
+      return count;
+    }
+
+    function addProvider() {
+      const input = document.getElementById('providerInput');
+      const provider = input.value.trim().toLowerCase();
+      if (provider) {
+        const providers = getProviders();
+        providers.push(provider);
+        saveProviders(providers);
+        input.value = '';
+        updateDisplay();
+        input.focus();
+      }
+    }
+
+    function deleteProvider(nameToDelete) {
+      let providers = getProviders();
+      const index = providers.indexOf(nameToDelete);
+      if (index !== -1) {
+        providers.splice(index, 1); // delete only one occurrence
+        saveProviders(providers);
+        updateDisplay();
+      }
+    }
+
+    function clearAll() {
+      if (confirm("Are you sure you want to clear all entries?")) {
+        localStorage.removeItem('providers');
+        updateDisplay();
+      }
+    }
+
+    function exportCSV() {
+      const providers = getProviders();
+      const counts = countProviders(providers);
+      let csvContent = "data:text/csv;charset=utf-8,Provider Name,Count\n";
+
+      for (const [name, count] of Object.entries(counts)) {
+        csvContent += `${name},${count}\n`;
+      }
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "certification_providers.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function updateDisplay() {
+      const providers = getProviders();
+      const counts = countProviders(providers);
+
+      // Update suggestion list
+      const datalist = document.getElementById("providerSuggestions");
+      datalist.innerHTML = "";
+      [...new Set(providers)].sort().forEach(p => {
+        const option = document.createElement("option");
+        option.value = p;
+        datalist.appendChild(option);
+      });
+
+      // Sorted by name
+      const sortedByName = Object.keys(counts).sort();
+      const nameList = document.getElementById('sortedByNameList');
+      nameList.innerHTML = '';
+      sortedByName.forEach(name => {
+        nameList.innerHTML += `<li>${name} — ${counts[name]}
+          <button class="delete-btn" onclick="deleteProvider('${name}')">Delete</button></li>`;
+      });
+
+      // Sorted by count
+      const sortedByCount = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const countList = document.getElementById('sortedByCountList');
+      countList.innerHTML = '';
+      sortedByCount.forEach(([name, count]) => {
+        countList.innerHTML += `<li>${name} — ${count}</li>`;
+      });
+
+      // Top provider
+      const top = sortedByCount.length > 0 ? sortedByCount[0][0] : 'None';
+      document.getElementById('topProvider').innerText = top;
+    }
+
+    // ENTER key support
+    document.getElementById("providerInput").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        addProvider();
+      }
+    });
+
+    updateDisplay();
+  </script>
+
+</body>
+</html>
